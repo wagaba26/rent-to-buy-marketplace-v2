@@ -5,6 +5,8 @@ import { useParams, useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 import Navigation from '@/components/Navigation'
 import { useVehicleStore } from '@/store/vehicleStore'
+import CheckoutFlow from '@/components/CheckoutFlow'
+import { Breadcrumbs } from '@/components/ui'
 
 export default function VehicleDetailPage() {
   const params = useParams()
@@ -50,12 +52,14 @@ export default function VehicleDetailPage() {
           transition={{ duration: 0.6 }}
           className="container"
         >
-          <button
-            onClick={() => router.back()}
-            className="mb-8 text-carbon-400 hover:text-volt-500 transition-colors text-sm font-medium"
-          >
-            ← BACK TO VEHICLES
-          </button>
+          <Breadcrumbs
+            items={[
+              { label: 'Home', href: '/' },
+              { label: 'Vehicles', href: '/vehicles' },
+              { label: `${vehicle.make} ${vehicle.model}`, href: undefined },
+            ]}
+            className="mb-8"
+          />
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
             {/* Image Gallery */}
@@ -186,7 +190,13 @@ export default function VehicleDetailPage() {
 
               {/* CTA Buttons */}
               <div className="flex flex-col sm:flex-row gap-4">
-                <button className="flex-1 px-8 py-4 bg-volt-500 text-carbon-950 font-bold text-lg hover:bg-volt-400 transition-all duration-300 rounded-sm shadow-lg hover:shadow-glow">
+                <button
+                  onClick={() => {
+                    const { initializeCheckout } = require('@/store/checkoutStore').useCheckoutStore.getState()
+                    initializeCheckout(vehicle.id)
+                  }}
+                  className="flex-1 px-8 py-4 bg-volt-500 text-carbon-950 font-bold text-lg hover:bg-volt-400 transition-all duration-300 rounded-sm shadow-lg hover:shadow-glow"
+                >
                   RESERVE NOW
                 </button>
                 <button className="px-8 py-4 border-2 border-carbon-600 text-carbon-50 font-bold text-lg hover:border-volt-500 hover:text-volt-500 transition-all duration-300 rounded-sm">
@@ -197,6 +207,9 @@ export default function VehicleDetailPage() {
           </div>
         </motion.div>
       </div>
+      
+      {/* Checkout Flow Modal */}
+      <CheckoutFlow />
     </main>
   )
 }

@@ -180,3 +180,4 @@ kubectl scale deployment/<service-name> -n rent-to-own --replicas=3
 
 
 
+

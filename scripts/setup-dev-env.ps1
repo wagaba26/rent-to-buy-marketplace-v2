@@ -149,3 +149,4 @@ Write-Host "5. Initialize database: npm run init-db"
 Write-Host ""
 Write-Host "Then you can start the services!"
 
+

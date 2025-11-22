@@ -47,7 +47,7 @@ export function generateToken(user: AuthUser): string {
       role: user.role,
     },
     JWT_SECRET,
-    { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
+    { expiresIn: (process.env.JWT_EXPIRES_IN || '7d') as any }
   );
 }
 

@@ -1,9 +1,10 @@
 import type { Metadata } from 'next'
 import './globals.css'
+import { ErrorBoundary } from '@/components/ui'
 
 export const metadata: Metadata = {
-  title: 'Rent-to-Own Marketplace | Drive Your Future',
-  description: 'Flexible rent-to-own vehicle marketplace with intelligent credit scoring',
+  title: 'AutoLadder | Your Journey to Vehicle Ownership',
+  description: 'AutoLadder makes vehicle ownership accessible through flexible rent-to-own plans. No credit history? No problem.',
 }
 
 export default function RootLayout({
@@ -13,7 +14,11 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>
+        <ErrorBoundary>
+          {children}
+        </ErrorBoundary>
+      </body>
     </html>
   )
 }

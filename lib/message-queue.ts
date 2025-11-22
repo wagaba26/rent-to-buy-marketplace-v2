@@ -15,7 +15,7 @@ export interface Message {
 }
 
 export class MessageQueueClient extends EventEmitter {
-  private connection: amqp.Connection | null = null;
+  private connection: any = null;
   private channel: amqp.Channel | null = null;
   private config: MessageQueueConfig;
   private retryAttempts: number;
@@ -30,15 +30,15 @@ export class MessageQueueClient extends EventEmitter {
 
   async connect(): Promise<void> {
     try {
-      this.connection = await amqp.connect(this.config.url);
-      this.channel = await this.connection.createChannel();
-      
-      this.connection.on('error', (err) => {
+      this.connection = await amqp.connect(this.config.url) as any;
+      this.channel = await this.connection!.createChannel();
+
+      this.connection?.on('error', (err: any) => {
         console.error('RabbitMQ connection error:', err);
         this.emit('error', err);
       });
 
-      this.connection.on('close', () => {
+      this.connection?.on('close', () => {
         console.log('RabbitMQ connection closed, attempting reconnect...');
         setTimeout(() => this.connect(), this.retryDelay);
       });
@@ -93,14 +93,18 @@ export class MessageQueueClient extends EventEmitter {
       await this.channel.consume(queue, async (msg) => {
         if (!msg) return;
 
+        let message: Message | null = null;
+
         try {
-          const message: Message = JSON.parse(msg.content.toString());
-          await handler(message);
+          message = JSON.parse(msg.content.toString());
+          if (message) {
+            await handler(message);
+          }
           this.channel!.ack(msg);
         } catch (error) {
           console.error('Error processing message:', error);
           const retries = msg.properties.headers?.retries || 0;
-          if (retries < this.retryAttempts) {
+          if (retries < this.retryAttempts && message) {
             await this.channel!.nack(msg, false, false);
             await this.publish(exchange, routingKey, {
               ...message,
@@ -108,7 +112,7 @@ export class MessageQueueClient extends EventEmitter {
             } as any);
           } else {
             this.channel!.nack(msg, false, false);
-            console.error('Message failed after max retries, moving to DLQ');
+            console.error('Message failed after max retries or invalid format, moving to DLQ');
           }
         }
       });

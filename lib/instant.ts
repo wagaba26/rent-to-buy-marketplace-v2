@@ -1,4 +1,5 @@
 import { id, i, init, InstaQLEntity } from "@instantdb/react";
+export { id };
 
 // Get your APP_ID from https://instant.dev
 // Replace this with your actual Instant app id
