@@ -1,0 +1,44 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-config
+  namespace: rent-to-own
+data:
+  # API Gateway
+  USER_SERVICE_URL: "http://user-service:3001"
+  VEHICLE_SERVICE_URL: "http://vehicle-service:3002"
+  PAYMENT_SERVICE_URL: "http://payment-service:3003"
+  CREDIT_SERVICE_URL: "http://credit-service:3004"
+  TELEMATICS_SERVICE_URL: "http://telematics-service:3005"
+  SUPPORT_SERVICE_URL: "http://support-service:3006"
+  
+  # Database hosts (using service names)
+  USER_DB_HOST: "user-db"
+  VEHICLE_DB_HOST: "vehicle-db"
+  PAYMENT_DB_HOST: "payment-db"
+  CREDIT_DB_HOST: "credit-db"
+  TELEMATICS_DB_HOST: "telematics-db"
+  SUPPORT_DB_HOST: "support-db"
+  
+  # Database ports
+  DB_PORT: "5432"
+  
+  # Database names
+  USER_DB_NAME: "userdb"
+  VEHICLE_DB_NAME: "vehicledb"
+  PAYMENT_DB_NAME: "paymentdb"
+  CREDIT_DB_NAME: "creditdb"
+  TELEMATICS_DB_NAME: "telematicsdb"
+  SUPPORT_DB_NAME: "supportdb"
+  
+  # RabbitMQ
+  RABBITMQ_URL: "amqp://admin:admin123@rabbitmq:5672"
+  
+  # Environment
+  NODE_ENV: "production"
+  
+  # Mobile Money (defaults - override with secrets)
+  MOBILE_MONEY_PROVIDER: "mtn"
+  MOBILE_MONEY_ENV: "production"
+  MOBILE_MONEY_CALLBACK_URL: "https://api.rent-to-own.com/payments/callbacks/mobile-money"
+

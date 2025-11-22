@@ -1,0 +1,30 @@
+{
+  "name": "@rent-to-own/telematics-service",
+  "version": "1.0.0",
+  "description": "Real-time telematics tracking and risk management service",
+  "main": "dist/index.js",
+  "scripts": {
+    "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "pg": "^8.11.3",
+    "ws": "^8.14.2",
+    "dotenv": "^16.3.1",
+    "node-cron": "^3.0.3",
+    "@rent-to-own/message-queue": "*",
+    "@rent-to-own/errors": "*"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.21",
+    "@types/node": "^20.10.6",
+    "@types/pg": "^8.10.9",
+    "@types/ws": "^8.5.10",
+    "@types/node-cron": "^3.0.11",
+    "ts-node-dev": "^2.0.0",
+    "typescript": "^5.3.3"
+  }
+}
+

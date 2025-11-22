@@ -1,0 +1,16 @@
+{
+  "name": "@rent-to-own/errors",
+  "version": "1.0.0",
+  "description": "Shared error classes and handling utilities",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.6",
+    "typescript": "^5.3.3"
+  }
+}
+

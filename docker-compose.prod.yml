@@ -1,0 +1,280 @@
+version: '3.8'
+
+services:
+  # Message Queue
+  rabbitmq:
+    image: rabbitmq:3.12-management-alpine
+    container_name: rent-to-own-rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-admin}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-admin123}
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: rabbitmq-diagnostics -q ping
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
+    networks:
+      - rent-to-own-network
+    restart: unless-stopped
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: rent-to-own-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: redis-cli ping
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - rent-to-own-network
+    restart: unless-stopped
+
+  # Databases
+  user-db:
+    image: postgres:15-alpine
+    container_name: rent-to-own-user-db
+    environment:
+      POSTGRES_DB: ${USER_DB_NAME:-userdb}
+      POSTGRES_USER: ${USER_DB_USER:-user}
+      POSTGRES_PASSWORD: ${USER_DB_PASSWORD:-userpass}
+    ports:
+      - "5432:5432"
+    volumes:
+      - user_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: pg_isready -U ${USER_DB_USER:-user}
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - rent-to-own-network
+    restart: unless-stopped
+
+  vehicle-db:
+    image: postgres:15-alpine
+    container_name: rent-to-own-vehicle-db
+    environment:
+      POSTGRES_DB: ${VEHICLE_DB_NAME:-vehicledb}
+      POSTGRES_USER: ${VEHICLE_DB_USER:-vehicle}
+      POSTGRES_PASSWORD: ${VEHICLE_DB_PASSWORD:-vehiclepass}
+    ports:
+      - "5433:5432"
+    volumes:
+      - vehicle_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: pg_isready -U ${VEHICLE_DB_USER:-vehicle}
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - rent-to-own-network
+    restart: unless-stopped
+
+  payment-db:
+    image: postgres:15-alpine
+    container_name: rent-to-own-payment-db
+    environment:
+      POSTGRES_DB: ${PAYMENT_DB_NAME:-paymentdb}
+      POSTGRES_USER: ${PAYMENT_DB_USER:-payment}
+      POSTGRES_PASSWORD: ${PAYMENT_DB_PASSWORD:-paymentpass}
+    ports:
+      - "5434:5432"
+    volumes:
+      - payment_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: pg_isready -U ${PAYMENT_DB_USER:-payment}
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - rent-to-own-network
+    restart: unless-stopped
+
+  credit-db:
+    image: postgres:15-alpine
+    container_name: rent-to-own-credit-db
+    environment:
+      POSTGRES_DB: ${CREDIT_DB_NAME:-creditdb}
+      POSTGRES_USER: ${CREDIT_DB_USER:-credit}
+      POSTGRES_PASSWORD: ${CREDIT_DB_PASSWORD:-creditpass}
+    ports:
+      - "5435:5432"
+    volumes:
+      - credit_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: pg_isready -U ${CREDIT_DB_USER:-credit}
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - rent-to-own-network
+    restart: unless-stopped
+
+  telematics-db:
+    image: postgres:15-alpine
+    container_name: rent-to-own-telematics-db
+    environment:
+      POSTGRES_DB: ${TELEMATICS_DB_NAME:-telematicsdb}
+      POSTGRES_USER: ${TELEMATICS_DB_USER:-telematics}
+      POSTGRES_PASSWORD: ${TELEMATICS_DB_PASSWORD:-telematicspass}
+    ports:
+      - "5436:5432"
+    volumes:
+      - telematics_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: pg_isready -U ${TELEMATICS_DB_USER:-telematics}
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - rent-to-own-network
+    restart: unless-stopped
+
+  support-db:
+    image: postgres:15-alpine
+    container_name: rent-to-own-support-db
+    environment:
+      POSTGRES_DB: ${SUPPORT_DB_NAME:-supportdb}
+      POSTGRES_USER: ${SUPPORT_DB_USER:-support}
+      POSTGRES_PASSWORD: ${SUPPORT_DB_PASSWORD:-supportpass}
+    ports:
+      - "5437:5432"
+    volumes:
+      - support_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: pg_isready -U ${SUPPORT_DB_USER:-support}
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - rent-to-own-network
+    restart: unless-stopped
+
+  # Monitoring - Prometheus
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: rent-to-own-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+    networks:
+      - rent-to-own-network
+    restart: unless-stopped
+
+  # Monitoring - Grafana
+  grafana:
+    image: grafana/grafana:latest
+    container_name: rent-to-own-grafana
+    ports:
+      - "3001:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-admin}
+      - GF_SERVER_ROOT_URL=http://localhost:3001
+    volumes:
+      - grafana_data:/var/lib/grafana
+    depends_on:
+      - prometheus
+    networks:
+      - rent-to-own-network
+    restart: unless-stopped
+
+  # Logging - Elasticsearch
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0
+    container_name: rent-to-own-elasticsearch
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    ports:
+      - "9200:9200"
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    networks:
+      - rent-to-own-network
+    restart: unless-stopped
+    healthcheck:
+      test: curl -f http://localhost:9200/_cluster/health || exit 1
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  # Logging - Logstash
+  logstash:
+    image: docker.elastic.co/logstash/logstash:8.11.0
+    container_name: rent-to-own-logstash
+    ports:
+      - "5044:5044"
+      - "9600:9600"
+    volumes:
+      - ./logging/logstash.conf:/usr/share/logstash/pipeline/logstash.conf
+    environment:
+      - LS_JAVA_OPTS=-Xmx512m -Xms512m
+    depends_on:
+      - elasticsearch
+    networks:
+      - rent-to-own-network
+    restart: unless-stopped
+
+  # Logging - Kibana
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.11.0
+    container_name: rent-to-own-kibana
+    ports:
+      - "5601:5601"
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+      - SERVER_NAME=kibana
+    depends_on:
+      - elasticsearch
+    networks:
+      - rent-to-own-network
+    restart: unless-stopped
+    healthcheck:
+      test: curl -f http://localhost:5601/api/status || exit 1
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+volumes:
+  rabbitmq_data:
+  redis_data:
+  user_db_data:
+  vehicle_db_data:
+  payment_db_data:
+  credit_db_data:
+  telematics_db_data:
+  support_db_data:
+  prometheus_data:
+  grafana_data:
+  elasticsearch_data:
+
+networks:
+  rent-to-own-network:
+    driver: bridge
+

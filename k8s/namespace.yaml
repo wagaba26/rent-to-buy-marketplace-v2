@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: rent-to-own
+  labels:
+    name: rent-to-own
+    environment: production
+

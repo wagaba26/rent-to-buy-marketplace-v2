@@ -1,0 +1,174 @@
+services:
+  # Message Queue
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: rent-to-own-rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: admin
+      RABBITMQ_DEFAULT_PASS: admin123
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: rabbitmq-diagnostics -q ping
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: rent-to-own-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: redis-cli ping
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # User Service Database
+  user-db:
+    image: postgres:15-alpine
+    container_name: rent-to-own-user-db
+    environment:
+      POSTGRES_DB: userdb
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: userpass
+    ports:
+      - "5432:5432"
+    volumes:
+      - user_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: pg_isready -U user
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Vehicle Service Database
+  vehicle-db:
+    image: postgres:15-alpine
+    container_name: rent-to-own-vehicle-db
+    environment:
+      POSTGRES_DB: vehicledb
+      POSTGRES_USER: vehicle
+      POSTGRES_PASSWORD: vehiclepass
+    ports:
+      - "5433:5432"
+    volumes:
+      - vehicle_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: pg_isready -U vehicle
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Payment Service Database
+  payment-db:
+    image: postgres:15-alpine
+    container_name: rent-to-own-payment-db
+    environment:
+      POSTGRES_DB: paymentdb
+      POSTGRES_USER: payment
+      POSTGRES_PASSWORD: paymentpass
+    ports:
+      - "5434:5432"
+    volumes:
+      - payment_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: pg_isready -U payment
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Credit Service Database
+  credit-db:
+    image: postgres:15-alpine
+    container_name: rent-to-own-credit-db
+    environment:
+      POSTGRES_DB: creditdb
+      POSTGRES_USER: credit
+      POSTGRES_PASSWORD: creditpass
+    ports:
+      - "5435:5432"
+    volumes:
+      - credit_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: pg_isready -U credit
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Telematics Service Database
+  telematics-db:
+    image: postgres:15-alpine
+    container_name: rent-to-own-telematics-db
+    environment:
+      POSTGRES_DB: telematicsdb
+      POSTGRES_USER: telematics
+      POSTGRES_PASSWORD: telematicspass
+    ports:
+      - "5436:5432"
+    volumes:
+      - telematics_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: pg_isready -U telematics
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Support Service Database
+  support-db:
+    image: postgres:15-alpine
+    container_name: rent-to-own-support-db
+    environment:
+      POSTGRES_DB: supportdb
+      POSTGRES_USER: support
+      POSTGRES_PASSWORD: supportpass
+    ports:
+      - "5437:5432"
+    volumes:
+      - support_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: pg_isready -U support
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Main App Database (for Next.js API routes)
+  main-db:
+    image: postgres:15-alpine
+    container_name: rent-to-own-main-db
+    environment:
+      POSTGRES_DB: rent_to_own
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5438:5432"
+    volumes:
+      - main_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: pg_isready -U postgres
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  rabbitmq_data:
+  redis_data:
+  user_db_data:
+  vehicle_db_data:
+  payment_db_data:
+  credit_db_data:
+  telematics_db_data:
+  support_db_data:
+  main_db_data:
+
+networks:
+  default:
+    name: rent-to-own-network
+

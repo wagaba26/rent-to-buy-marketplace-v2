@@ -1,0 +1,46 @@
+{
+  "name": "rent-to-own-marketplace",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "shared/*",
+    "services/*"
+  ],
+  "scripts": {
+    "dev": "next dev -p 4007",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "init-db": "node --env-file=.env --import tsx scripts/init-db.ts"
+  },
+  "dependencies": {
+    "@instantdb/react": "^0.22.61",
+    "amqplib": "^0.10.3",
+    "axios": "^1.6.2",
+    "bcrypt": "^5.1.1",
+    "date-fns": "^2.30.0",
+    "framer-motion": "^10.16.16",
+    "jsonwebtoken": "^9.0.2",
+    "next": "^14.0.4",
+    "node-cron": "^3.0.3",
+    "pg": "^8.11.3",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "zustand": "^4.4.7"
+  },
+  "devDependencies": {
+    "@types/amqplib": "^0.10.4",
+    "@types/bcrypt": "^5.0.2",
+    "@types/jsonwebtoken": "^9.0.5",
+    "@types/node": "^20.10.6",
+    "@types/node-cron": "^3.0.11",
+    "@types/pg": "^8.10.9",
+    "@types/react": "^18.2.46",
+    "@types/react-dom": "^18.2.18",
+    "autoprefixer": "^10.4.16",
+    "postcss": "^8.4.32",
+    "tailwindcss": "^3.4.0",
+    "tsx": "^4.7.0",
+    "typescript": "^5.3.3"
+  }
+}

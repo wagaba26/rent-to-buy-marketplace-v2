@@ -1,0 +1,19 @@
+{
+  "name": "@rent-to-own/encryption",
+  "version": "1.0.0",
+  "description": "Shared encryption utilities for data protection",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch"
+  },
+  "dependencies": {
+    "crypto": "^1.0.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.6",
+    "typescript": "^5.3.3"
+  }
+}
+
