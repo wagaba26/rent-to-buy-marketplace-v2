@@ -1,0 +1,330 @@
+#!/usr/bin/env node
+/**
+ * Swagger/OpenAPI Documentation Generator
+ * Generates comprehensive API documentation
+ */
+
+const fs = require('fs');
+const path = require('path');
+
+const swaggerDoc = {
+    openapi: '3.0.0',
+    info: {
+        title: 'Rent-to-Buy Car Marketplace API',
+        version: '1.0.0',
+        description: 'Enterprise-grade API for rent-to-buy car marketplace with RBAC, MFA, and comprehensive security',
+        contact: {
+            name: 'API Support',
+            email: 'support@rentobuy.com',
+        },
+    },
+    servers: [
+        {
+            url: 'http://localhost:4007/api',
+            description: 'Development server',
+        },
+        {
+            url: 'https://api.rentobuy.com/api',
+            description: 'Production server',
+        },
+    ],
+    components: {
+        securitySchemes: {
+            BearerAuth: {
+                type: 'http',
+                scheme: 'bearer',
+                bearerFormat: 'JWT',
+                description: 'JWT access token',
+            },
+        },
+        schemas: {
+            Error: {
+                type: 'object',
+                properties: {
+                    success: { type: 'boolean', example: false },
+                    error: {
+                        type: 'object',
+                        properties: {
+                            message: { type: 'string' },
+                            code: { type: 'string' },
+                        },
+                    },
+                },
+            },
+            User: {
+                type: 'object',
+                properties: {
+                    id: { type: 'string', format: 'uuid' },
+                    email: { type: 'string', format: 'email' },
+                    role: { type: 'string', enum: ['customer', 'retailer', 'admin'] },
+                    status: { type: 'string', enum: ['pending', 'active', 'suspended'] },
+                    retailerId: { type: 'string', format: 'uuid', nullable: true },
+                },
+            },
+            Vehicle: {
+                type: 'object',
+                properties: {
+                    id: { type: 'string', format: 'uuid' },
+                    make: { type: 'string' },
+                    model: { type: 'string' },
+                    year: { type: 'integer' },
+                    vehicleType: { type: 'string', enum: ['motorcycle', 'car', 'van', 'truck'] },
+                    price: { type: 'number' },
+                    depositAmount: { type: 'number' },
+                    monthlyPayment: { type: 'number' },
+                    status: { type: 'string', enum: ['available', 'reserved', 'rented', 'sold'] },
+                },
+            },
+        },
+    },
+    tags: [
+        { name: 'Authentication', description: 'User authentication and MFA' },
+        { name: 'Retailers', description: 'Retailer onboarding and management' },
+        { name: 'Vehicles', description: 'Vehicle CRUD operations' },
+        { name: 'Applications', description: 'Credit applications' },
+        { name: 'Admin', description: 'Admin dashboard endpoints' },
+    ],
+    paths: {
+        '/auth/login': {
+            post: {
+                tags: ['Authentication'],
+                summary: 'User login',
+                description: 'Authenticate user with email, password, and optional access code (for retailers) and MFA token',
+                requestBody: {
+                    required: true,
+                    content: {
+                        'application/json': {
+                            schema: {
+                                type: 'object',
+                                required: ['email', 'password'],
+                                properties: {
+                                    email: { type: 'string', format: 'email' },
+                                    password: { type: 'string', minLength: 8 },
+                                    accessCode: { type: 'string', description: 'Required for retailer login' },
+                                    mfaToken: { type: 'string', description: 'Required if MFA is enabled' },
+                                },
+                            },
+                        },
+                    },
+                },
+                responses: {
+                    200: {
+                        description: 'Login successful',
+                        content: {
+                            'application/json': {
+                                schema: {
+                                    type: 'object',
+                                    properties: {
+                                        success: { type: 'boolean', example: true },
+                                        data: {
+                                            type: 'object',
+                                            properties: {
+                                                accessToken: { type: 'string' },
+                                                refreshToken: { type: 'string' },
+                                                user: { $ref: '#/components/schemas/User' },
+                                            },
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                    401: {
+                        description: 'Invalid credentials or MFA required',
+                        content: {
+                            'application/json': {
+                                schema: { $ref: '#/components/schemas/Error' },
+                            },
+                        },
+                    },
+                    429: {
+                        description: 'Rate limit exceeded',
+                        content: {
+                            'application/json': {
+                                schema: { $ref: '#/components/schemas/Error' },
+                            },
+                        },
+                    },
+                },
+            },
+        },
+        '/auth/refresh': {
+            post: {
+                tags: ['Authentication'],
+                summary: 'Refresh access token',
+                requestBody: {
+                    required: true,
+                    content: {
+                        'application/json': {
+                            schema: {
+                                type: 'object',
+                                required: ['refreshToken'],
+                                properties: {
+                                    refreshToken: { type: 'string' },
+                                },
+                            },
+                        },
+                    },
+                },
+                responses: {
+                    200: {
+                        description: 'Token refreshed',
+                        content: {
+                            'application/json': {
+                                schema: {
+                                    type: 'object',
+                                    properties: {
+                                        success: { type: 'boolean' },
+                                        data: {
+                                            type: 'object',
+                                            properties: {
+                                                accessToken: { type: 'string' },
+                                                refreshToken: { type: 'string' },
+                                            },
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                },
+            },
+        },
+        '/retailers/register': {
+            post: {
+                tags: ['Retailers'],
+                summary: 'Register new retailer',
+                description: 'Public endpoint for retailer registration',
+                requestBody: {
+                    required: true,
+                    content: {
+                        'application/json': {
+                            schema: {
+                                type: 'object',
+                                required: ['email', 'password', 'businessName', 'tradingLicense', 'businessType', 'businessAddress', 'contactPerson', 'contactPhone'],
+                                properties: {
+                                    email: { type: 'string', format: 'email' },
+                                    password: { type: 'string', minLength: 8 },
+                                    businessName: { type: 'string' },
+                                    tradingLicense: { type: 'string' },
+                                    taxId: { type: 'string' },
+                                    businessType: { type: 'string', enum: ['sole_proprietor', 'partnership', 'corporation', 'llc', 'other'] },
+                                    businessAddress: { type: 'string' },
+                                    contactPerson: { type: 'string' },
+                                    contactPhone: { type: 'string' },
+                                },
+                            },
+                        },
+                    },
+                },
+                responses: {
+                    201: {
+                        description: 'Retailer registered successfully',
+                    },
+                    409: {
+                        description: 'Email or trading license already exists',
+                    },
+                    429: {
+                        description: 'Rate limit exceeded (2 registrations per day)',
+                    },
+                },
+            },
+        },
+        '/cars': {
+            get: {
+                tags: ['Vehicles'],
+                summary: 'List vehicles',
+                description: 'Public endpoint - returns surface info only',
+                parameters: [
+                    {
+                        name: 'limit',
+                        in: 'query',
+                        schema: { type: 'integer', default: 20 },
+                    },
+                    {
+                        name: 'offset',
+                        in: 'query',
+                        schema: { type: 'integer', default: 0 },
+                    },
+                    {
+                        name: 'type',
+                        in: 'query',
+                        schema: { type: 'string', enum: ['motorcycle', 'car', 'van', 'truck'] },
+                    },
+                ],
+                responses: {
+                    200: {
+                        description: 'List of vehicles',
+                        content: {
+                            'application/json': {
+                                schema: {
+                                    type: 'object',
+                                    properties: {
+                                        success: { type: 'boolean' },
+                                        data: {
+                                            type: 'object',
+                                            properties: {
+                                                vehicles: {
+                                                    type: 'array',
+                                                    items: { $ref: '#/components/schemas/Vehicle' },
+                                                },
+                                            },
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                },
+            },
+            post: {
+                tags: ['Vehicles'],
+                summary: 'Create vehicle',
+                description: 'Retailer only - creates vehicle with auto-assigned retailer_id',
+                security: [{ BearerAuth: [] }],
+                requestBody: {
+                    required: true,
+                    content: {
+                        'application/json': {
+                            schema: {
+                                type: 'object',
+                                required: ['make', 'model', 'year', 'vehicleType', 'price', 'depositAmount', 'paymentFrequency', 'paymentTermMonths'],
+                                properties: {
+                                    make: { type: 'string' },
+                                    model: { type: 'string' },
+                                    year: { type: 'integer' },
+                                    vehicleType: { type: 'string' },
+                                    price: { type: 'number' },
+                                    depositAmount: { type: 'number' },
+                                    monthlyPayment: { type: 'number' },
+                                    paymentFrequency: { type: 'string', enum: ['weekly', 'monthly'] },
+                                    paymentTermMonths: { type: 'integer' },
+                                },
+                            },
+                        },
+                    },
+                },
+                responses: {
+                    201: {
+                        description: 'Vehicle created',
+                    },
+                    403: {
+                        description: 'Forbidden - retailer only',
+                    },
+                    429: {
+                        description: 'Rate limit exceeded (20 cars per hour)',
+                    },
+                },
+            },
+        },
+    },
+};
+
+// Write to file
+const outputPath = path.join(__dirname, '..', 'swagger.json');
+fs.writeFileSync(outputPath, JSON.stringify(swaggerDoc, null, 2));
+
+console.log('✅ Swagger documentation generated: swagger.json');
+console.log('\nTo view documentation:');
+console.log('  npm run docs:serve');
+console.log('  Then open: http://localhost:8000');
