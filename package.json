@@ -28,6 +28,7 @@
     "amqplib": "^0.10.3",
     "axios": "^1.6.2",
     "bcrypt": "^5.1.1",
+    "bottleneck": "^2.19.5",
     "date-fns": "^2.30.0",
     "framer-motion": "^10.16.16",
     "jsonwebtoken": "^9.0.2",

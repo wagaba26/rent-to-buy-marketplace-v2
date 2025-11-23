@@ -5,6 +5,7 @@ import { MessageQueueClient } from '@rent-to-own/message-queue';
 import { NotFoundError, ValidationError, ForbiddenError } from '@rent-to-own/errors';
 import { CreditServiceClient } from '../services/creditServiceClient';
 import { checkPermission, AuthenticatedRequest, checkOwnershipOrAdmin } from '../middleware/permissions';
+import { GeocodingService } from '../../../../lib/external-apis/geocoding-service';
 
 export function userRoutes(
   pool: Pool,
@@ -65,6 +66,44 @@ export function userRoutes(
       if (phoneNumber !== undefined) {
         updates.push(`phone_number = $${paramCount++}, encrypted_phone = $${paramCount++}`);
         values.push(phoneNumber, encryptionService.encrypt(phoneNumber));
+      }
+
+      // Handle address update with geocoding
+      if (req.body.address !== undefined) {
+        const address = req.body.address;
+        if (address) {
+          try {
+            const geocoded = await GeocodingService.geocodeAddress(address);
+            if (geocoded) {
+              updates.push(`address = $${paramCount++}`);
+              values.push(geocoded.display_name); // Use standardized address
+
+              const { lat, lon } = GeocodingService.extractCoordinates(geocoded);
+              updates.push(`latitude = $${paramCount++}`);
+              values.push(lat);
+              updates.push(`longitude = $${paramCount++}`);
+              values.push(lon);
+            } else {
+              // If geocoding fails to find a match, we still save the address but warn
+              console.warn(`Could not geocode address: ${address}`);
+              updates.push(`address = $${paramCount++}`);
+              values.push(address);
+            }
+          } catch (error) {
+            console.error('Geocoding error:', error);
+            // Fallback to saving raw address
+            updates.push(`address = $${paramCount++}`);
+            values.push(address);
+          }
+        } else {
+          // Clear address
+          updates.push(`address = $${paramCount++}`);
+          values.push(null);
+          updates.push(`latitude = $${paramCount++}`);
+          values.push(null);
+          updates.push(`longitude = $${paramCount++}`);
+          values.push(null);
+        }
       }
 
       if (updates.length === 0) {

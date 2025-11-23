@@ -3,6 +3,7 @@ import { Pool } from 'pg';
 import { MessageQueueClient } from '@rent-to-own/message-queue';
 import { NotFoundError, ValidationError } from '@rent-to-own/errors';
 import { validate, validators } from '../middleware/validation';
+import { VehicleValidator } from '../../../../lib/external-apis/vehicle-validator';
 
 export function vehicleRoutes(pool: Pool, messageQueue: MessageQueueClient): Router {
   const router = Router();
@@ -251,8 +252,42 @@ export function vehicleRoutes(pool: Pool, messageQueue: MessageQueueClient): Rou
           eligibilityTier,
           description,
           images = [],
-          specifications = {},
         } = req.body;
+
+        // Validate VIN and populate specs if provided
+        let vehicleSpecs = specifications;
+        let validatedMake = make;
+        let validatedModel = model;
+        let validatedYear = year;
+        let validatedType = vehicleType;
+
+        if (vin) {
+          try {
+            const nhtsaData = await VehicleValidator.decodeVIN(vin);
+
+            if (!VehicleValidator.isValidVIN(nhtsaData)) {
+              throw new ValidationError('Invalid VIN: Unable to decode vehicle details');
+            }
+
+            const extractedSpecs = VehicleValidator.extractVehicleSpecs(nhtsaData);
+
+            // Auto-populate fields if they match
+            if (extractedSpecs.make) validatedMake = extractedSpecs.make;
+            if (extractedSpecs.model) validatedModel = extractedSpecs.model;
+            if (extractedSpecs.year) validatedYear = parseInt(extractedSpecs.year);
+
+            // Merge specs
+            vehicleSpecs = {
+              ...vehicleSpecs,
+              ...extractedSpecs,
+              nhtsaData: nhtsaData.Results
+            };
+          } catch (error: any) {
+            console.error('VIN Validation Error:', error.message);
+            // We don't block creation on API failure, but we warn
+            if (error instanceof ValidationError) throw error;
+          }
+        }
 
         // Validate deposit doesn't exceed price
         if (parseFloat(depositAmount) > parseFloat(price)) {
@@ -300,9 +335,9 @@ export function vehicleRoutes(pool: Pool, messageQueue: MessageQueueClient): Rou
           )
           RETURNING *`,
           [
-            make,
-            model,
-            parseInt(year),
+            validatedMake,
+            validatedModel,
+            parseInt(validatedYear),
             vehicleType,
             categoryId || null,
             vin || null,
@@ -318,7 +353,7 @@ export function vehicleRoutes(pool: Pool, messageQueue: MessageQueueClient): Rou
             eligibilityTier || null,
             description || null,
             images,
-            JSON.stringify(specifications),
+            JSON.stringify(vehicleSpecs),
           ]
         );
 

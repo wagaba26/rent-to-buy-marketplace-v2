@@ -11,6 +11,7 @@ import { processTelematicsData } from './services/riskManagement';
 import { triggerAlerts } from './services/alerts';
 import { checkImmobilization } from './services/immobilization';
 import { updateDrivingBehaviorSummary, publishCreditEvent } from './services/drivingBehavior';
+import { WeatherService } from '../../../lib/external-apis/weather-service';
 
 dotenv.config();
 
@@ -58,7 +59,7 @@ app.use(errorHandler);
 // WebSocket connection handling
 wss.on('connection', (ws, req) => {
   const vehicleId = new URL(req.url || '', `http://${req.headers.host}`).searchParams.get('vehicleId');
-  
+
   if (!vehicleId) {
     ws.close(1008, 'vehicleId required');
     return;
@@ -85,13 +86,27 @@ wss.on('connection', (ws, req) => {
 // Handle incoming telematics data with enhanced sensor support
 async function handleTelematicsData(vehicleId: string, data: any) {
   try {
+    // Fetch weather data if location is available
+    let weatherData = null;
+    let weatherRiskScore = 0;
+
+    if (data.latitude && data.longitude) {
+      try {
+        weatherData = await WeatherService.getCurrentWeather(data.latitude, data.longitude);
+        weatherRiskScore = WeatherService.calculateWeatherRisk(weatherData).riskScore;
+      } catch (error) {
+        console.error('Failed to fetch weather data:', error);
+      }
+    }
+
     // Store enhanced telematics data with all sensor types
     await pool.query(
       `INSERT INTO telematics_data (
         vehicle_id, latitude, longitude, speed, heading, engine_status, 
         fuel_level, braking_force, acceleration, idling_duration_seconds,
-        rpm, odometer_km, battery_voltage, gps_signal_strength, device_tamper_status
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)`,
+        rpm, odometer_km, battery_voltage, gps_signal_strength, device_tamper_status,
+        weather_data, weather_risk_score
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)`,
       [
         vehicleId,
         data.latitude,
@@ -108,6 +123,8 @@ async function handleTelematicsData(vehicleId: string, data: any) {
         data.batteryVoltage,
         data.gpsSignalStrength,
         data.deviceTamperStatus || false,
+        weatherData ? JSON.stringify(weatherData) : null,
+        weatherRiskScore,
       ]
     );
 
@@ -195,8 +212,25 @@ async function initializeDatabase() {
         battery_voltage DECIMAL(4, 2),
         gps_signal_strength INTEGER,
         device_tamper_status BOOLEAN DEFAULT false,
+        weather_data JSONB,
+        weather_risk_score INTEGER DEFAULT 0,
         timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
+
+      -- Add weather columns if they don't exist (migration)
+      DO $$
+      BEGIN
+        BEGIN
+          ALTER TABLE telematics_data ADD COLUMN weather_data JSONB;
+        EXCEPTION
+          WHEN duplicate_column THEN NULL;
+        END;
+        BEGIN
+          ALTER TABLE telematics_data ADD COLUMN weather_risk_score INTEGER DEFAULT 0;
+        EXCEPTION
+          WHEN duplicate_column THEN NULL;
+        END;
+      END $$;
 
       -- Authorized zones/geo-fences for vehicles
       CREATE TABLE IF NOT EXISTS authorized_zones (
@@ -313,9 +347,9 @@ async function start() {
   try {
     await initializeDatabase();
     await messageQueue.connect();
-    
+
     server.listen(PORT, () => {
-      console.log(`Telematics service running on port ${PORT}`);
+      console.log(`Telematics service running on port ${PORT} `);
       console.log(`WebSocket server ready on ws://localhost:${PORT}`);
     });
   } catch (error) {

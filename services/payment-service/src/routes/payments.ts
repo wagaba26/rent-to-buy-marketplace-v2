@@ -7,6 +7,7 @@ import { PaymentScheduleService } from '../services/paymentSchedule';
 import { MobileMoneyService, MobileMoneyPaymentRequest } from '../services/mobileMoney';
 import { PaymentRetryService } from '../services/paymentRetry';
 import { IdempotencyService } from '../services/idempotency';
+import { CurrencyService } from '../../../../lib/external-apis/currency-service';
 
 export function paymentRoutes(
   pool: Pool,
@@ -215,6 +216,7 @@ export function paymentRoutes(
         phoneNumber,
         idempotencyKey,
         isDeposit = false,
+        currency = 'UGX', // Default to base currency
       } = req.body;
 
       if (!paymentPlanId || !userId || !amount || !paymentMethod) {
@@ -225,10 +227,30 @@ export function paymentRoutes(
         throw new ValidationError('mobileMoneyProvider and phoneNumber are required for mobile money payments');
       }
 
+      // Handle currency conversion
+      let finalAmount = amount;
+      let exchangeRate = 1.0;
+      let originalAmount = amount;
+      let originalCurrency = currency;
+
+      if (currency !== 'UGX') {
+        try {
+          // Get exchange rate from currency to UGX
+          exchangeRate = await CurrencyService.getExchangeRate(currency, 'UGX');
+          finalAmount = amount * exchangeRate;
+
+          // Round to 2 decimal places
+          finalAmount = Math.round(finalAmount * 100) / 100;
+        } catch (error) {
+          console.error('Currency conversion error:', error);
+          throw new ValidationError(`Failed to convert currency from ${currency} to UGX`);
+        }
+      }
+
       // Check idempotency key
       const idempotencyKeyToUse = idempotencyKey || IdempotencyService.generateIdempotencyKey();
       const idempotencyCheck = await idempotencyService.checkIdempotencyKey(idempotencyKeyToUse);
-      
+
       if (idempotencyCheck.exists && idempotencyCheck.responseData) {
         return res.json({
           success: true,
@@ -258,13 +280,14 @@ export function paymentRoutes(
       const paymentResult = await pool.query(
         `INSERT INTO payments (
           payment_plan_id, user_id, amount, payment_method, mobile_money_provider,
-          phone_number, encrypted_phone_number, idempotency_key, status, is_deposit, due_date
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'processing', $9, $10)
+          phone_number, encrypted_phone_number, idempotency_key, status, is_deposit, due_date,
+          currency, exchange_rate, original_amount, original_currency
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'processing', $9, $10, $11, $12, $13, $14)
         RETURNING *`,
         [
           paymentPlanId,
           userId,
-          amount,
+          finalAmount,
           paymentMethod,
           mobileMoneyProvider,
           phoneNumber,
@@ -272,6 +295,10 @@ export function paymentRoutes(
           idempotencyKeyToUse,
           isDeposit,
           isDeposit ? null : plan.next_payment_date,
+          'UGX',
+          exchangeRate,
+          originalAmount,
+          originalCurrency
         ]
       );
 
