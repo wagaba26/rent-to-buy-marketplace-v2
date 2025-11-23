@@ -114,23 +114,23 @@ export class ResilientHttpClient {
   }
 
   async get<T = any>(url: string, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> {
-    return this.circuitBreaker.fire({ ...config, method: 'GET', url });
+    return this.circuitBreaker.fire({ ...config, method: 'GET', url }) as Promise<AxiosResponse<T>>;
   }
 
   async post<T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> {
-    return this.circuitBreaker.fire({ ...config, method: 'POST', url, data });
+    return this.circuitBreaker.fire({ ...config, method: 'POST', url, data }) as Promise<AxiosResponse<T>>;
   }
 
   async put<T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> {
-    return this.circuitBreaker.fire({ ...config, method: 'PUT', url, data });
+    return this.circuitBreaker.fire({ ...config, method: 'PUT', url, data }) as Promise<AxiosResponse<T>>;
   }
 
   async patch<T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> {
-    return this.circuitBreaker.fire({ ...config, method: 'PATCH', url, data });
+    return this.circuitBreaker.fire({ ...config, method: 'PATCH', url, data }) as Promise<AxiosResponse<T>>;
   }
 
   async delete<T = any>(url: string, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> {
-    return this.circuitBreaker.fire({ ...config, method: 'DELETE', url });
+    return this.circuitBreaker.fire({ ...config, method: 'DELETE', url }) as Promise<AxiosResponse<T>>;
   }
 
   // Get circuit breaker stats
