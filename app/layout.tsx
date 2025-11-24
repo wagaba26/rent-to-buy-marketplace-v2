@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import './globals.css'
-import { ErrorBoundary } from '@/components/ui'
+import { AuthProvider } from '@/components/AuthProvider'
 
 export const metadata: Metadata = {
   title: 'AutoLadder | Your Journey to Vehicle Ownership',
@@ -15,9 +15,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        <ErrorBoundary>
+        <AuthProvider>
           {children}
-        </ErrorBoundary>
+        </AuthProvider>
       </body>
     </html>
   )

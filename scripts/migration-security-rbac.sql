@@ -273,13 +273,14 @@ GROUP BY r.id, r.business_name;
 -- ============================================================================
 
 -- Vacuum analyze to update statistics
-VACUUM ANALYZE retailers;
-VACUUM ANALYZE retailer_access_codes;
-VACUUM ANALYZE refresh_tokens;
-VACUUM ANALYZE mfa_secrets;
-VACUUM ANALYZE audit_logs;
-VACUUM ANALYZE credit_applications;
-VACUUM ANALYZE vehicles;
+-- Vacuum analyze to update statistics
+-- VACUUM ANALYZE retailers;
+-- VACUUM ANALYZE retailer_access_codes;
+-- VACUUM ANALYZE refresh_tokens;
+-- VACUUM ANALYZE mfa_secrets;
+-- VACUUM ANALYZE audit_logs;
+-- VACUUM ANALYZE credit_applications;
+-- VACUUM ANALYZE vehicles;
 
 -- ============================================================================
 -- MIGRATION COMPLETE

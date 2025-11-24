@@ -1,169 +1,198 @@
-'use client'
+'use client';
 
-import { motion } from 'framer-motion'
-import { useEffect, useState } from 'react'
-import Navigation from '@/components/Navigation'
-import VehicleGrid from '@/components/VehicleGrid'
-import Hero from '@/components/Hero'
-import InstantVehicleAdmin from '@/components/InstantVehicleAdmin'
-import Footer from '@/components/Footer'
-import { db, vehiclesRoom, type Vehicle } from '@/lib/instant'
+import React from 'react';
+import { Hero } from '@/components/Hero';
+import Navigation from '@/components/Navigation';
+import { Footer } from '@/components/Footer';
+import { VehicleCard } from '@/components/VehicleCard';
+import { Button } from '@/components/ui/Button';
+import { ArrowRight, CheckCircle2, ShieldCheck, Zap, Clock, DollarSign, Search, Car } from 'lucide-react';
+import { useVehicles } from '@/hooks/useVehicles';
+import Link from 'next/link';
 
 export default function Home() {
-  const [mounted, setMounted] = useState(false)
+  // Fetch real vehicles from API
+  const { vehicles, loading } = useVehicles({ limit: 4, status: 'available' });
 
-  // Use Instant to fetch vehicles in real-time
-  const { isLoading, error, data } = db.useQuery({
-    vehicles: {
-      $: {
-        where: {
-          status: 'available'
-        }
-      }
-    }
-  });
+  const steps = [
+    {
+      icon: <Search className="w-8 h-8 text-primary" />,
+      title: 'Search & Apply',
+      description: 'Browse our premium inventory and apply in minutes with our AI-powered system.',
+    },
+    {
+      icon: <CheckCircle2 className="w-8 h-8 text-primary" />,
+      title: 'Select a Plan',
+      description: 'Choose a flexible payment plan that fits your budget and lifestyle.',
+    },
+    {
+      icon: <Car className="w-8 h-8 text-primary" />,
+      title: 'Drive & Pay',
+      description: 'Pick up your car and start driving towards ownership with every payment.',
+    },
+  ];
 
-  // Get presence data (users viewing vehicles)
-  const { peers } = db.rooms.usePresence(vehiclesRoom);
-  const numUsers = 1 + Object.keys(peers).length;
-
-  useEffect(() => {
-    setMounted(true)
-  }, [])
-
-  if (!mounted) {
-    return null
-  }
-
-  if (isLoading) {
-    return (
-      <main className="min-h-screen bg-bg-primary selection:bg-primary selection:text-white">
-        <Navigation />
-        <Hero />
-        <div className="container py-24 flex flex-col justify-center items-center min-h-[400px]">
-          <div className="relative">
-            <div className="w-16 h-16 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div className="w-2 h-2 bg-primary rounded-full animate-pulse" />
-            </div>
-          </div>
-          <p className="text-text-secondary font-medium mt-6 animate-pulse">Loading vehicles...</p>
-        </div>
-        <Footer />
-      </main>
-    )
-  }
-
-  if (error) {
-    return (
-      <main className="min-h-screen bg-bg-primary selection:bg-primary selection:text-white">
-        <Navigation />
-        <Hero />
-        <div className="container py-24 flex justify-center items-center min-h-[400px]">
-          <div className="max-w-md w-full p-8 bg-error/5 border border-error/20 rounded-2xl text-error backdrop-blur-sm">
-            <div className="flex items-start gap-4">
-              <div className="p-3 bg-error/10 rounded-xl">
-                <svg className="w-6 h-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                </svg>
-              </div>
-              <div>
-                <h3 className="font-bold text-lg mb-2 text-white">Error loading vehicles</h3>
-                <p className="text-sm text-error/90 leading-relaxed">{error.message}</p>
-                <button
-                  onClick={() => window.location.reload()}
-                  className="mt-4 px-4 py-2 bg-error/10 hover:bg-error/20 text-error rounded-lg text-sm font-medium transition-colors"
-                >
-                  Try Again
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-        <Footer />
-      </main>
-    )
-  }
-
-  const vehicles: Vehicle[] = data?.vehicles || []
+  const benefits = [
+    {
+      icon: <DollarSign className="w-6 h-6 text-accent" />,
+      title: 'Flexible Payments',
+      description: 'Weekly or fortnightly payments that match your pay cycle.',
+    },
+    {
+      icon: <Zap className="w-6 h-6 text-accent" />,
+      title: 'AI Credit Scoring',
+      description: 'Fair assessment based on affordability, not just credit history.',
+    },
+    {
+      icon: <Clock className="w-6 h-6 text-accent" />,
+      title: 'Fast Approval',
+      description: 'Get approved in as little as 24 hours and drive away sooner.',
+    },
+  ];
 
   return (
-    <main className="min-h-screen bg-bg-primary selection:bg-primary selection:text-white overflow-hidden">
+    <main className="min-h-screen bg-bg-primary selection:bg-primary/30">
       <Navigation />
+
       <Hero />
 
-      <div className="relative">
-        {/* Background Decor */}
-        <div className="absolute top-0 left-1/4 w-96 h-96 bg-primary/5 rounded-full blur-3xl -z-10" />
-        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-accent/5 rounded-full blur-3xl -z-10" />
-
-        <motion.section
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.8 }}
-          className="container py-20 md:py-32"
-        >
-          <div className="mb-16 relative">
-            <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-8">
-              <div className="relative z-10">
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-bold uppercase tracking-wider mb-4">
-                  <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-                  Live Inventory
-                </div>
-                <h2 className="font-heading text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-4 tracking-tight">
-                  Available <span className="text-gradient">Vehicles</span>
-                </h2>
-                <p className="text-text-secondary text-lg max-w-2xl leading-relaxed">
-                  Browse our curated selection of premium vehicles available for rent-to-own.
-                  Flexible plans tailored to your journey.
-                </p>
-              </div>
-
-              {numUsers > 1 && (
-                <div className="flex items-center gap-3 px-4 py-2 bg-bg-tertiary/50 border border-border-primary rounded-full backdrop-blur-sm animate-fade-in">
-                  <span className="relative flex h-3 w-3">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-success opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-3 w-3 bg-success"></span>
-                  </span>
-                  <span className="text-sm font-medium text-text-primary">
-                    <span className="font-bold text-white">{numUsers}</span> people browsing
-                  </span>
-                </div>
-              )}
-            </div>
-
-            <div className="h-px w-full bg-gradient-to-r from-transparent via-border-accent to-transparent opacity-50" />
+      {/* Steps Section */}
+      <section className="section-padding relative overflow-hidden" id="how-it-works">
+        <div className="container mx-auto px-4 md:px-6">
+          <div className="text-center max-w-3xl mx-auto mb-16">
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">How It Works</h2>
+            <p className="text-text-secondary text-lg">
+              Your path to car ownership is simpler than you think. Just three easy steps to get on the road.
+            </p>
           </div>
 
-          <VehicleGrid vehicles={vehicles.map(v => ({
-            id: v.id,
-            make: v.make,
-            model: v.model,
-            year: v.year,
-            vehicle_type: v.vehicleType,
-            price: v.price,
-            deposit_amount: v.depositAmount,
-            weekly_payment: v.weeklyPayment,
-            monthly_payment: v.monthlyPayment,
-            payment_frequency: v.paymentFrequency || '',
-            images: v.images || [],
-            status: v.status,
-            color: v.color,
-            mileage: v.mileage,
-            description: v.description,
-            category_id: v.categoryId,
-            vin: v.vin,
-            registration_number: v.registrationNumber,
-            eligibility_tier: v.eligibilityTier,
-            payment_term_months: v.paymentTermMonths,
-            specifications: v.specifications as Record<string, any> | undefined,
-          }))} />
-        </motion.section>
-      </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 relative">
+            {/* Connecting Line (Desktop) */}
+            <div className="hidden md:block absolute top-12 left-[16%] right-[16%] h-0.5 bg-gradient-to-r from-transparent via-primary/30 to-transparent border-t border-dashed border-primary/30 z-0" />
 
-      <InstantVehicleAdmin />
+            {steps.map((step, index) => (
+              <div key={index} className="relative z-10 flex flex-col items-center text-center group">
+                <div className="w-24 h-24 rounded-2xl bg-bg-secondary border border-border-secondary flex items-center justify-center mb-6 shadow-lg shadow-primary/5 group-hover:shadow-primary/20 group-hover:border-primary/50 transition-all duration-500">
+                  {step.icon}
+                </div>
+                <h3 className="text-xl font-bold mb-3">{step.title}</h3>
+                <p className="text-text-secondary leading-relaxed max-w-xs">
+                  {step.description}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Featured Vehicles */}
+      <section className="section-padding bg-bg-secondary/30 border-y border-border-primary">
+        <div className="container mx-auto px-4 md:px-6">
+          <div className="flex flex-col md:flex-row items-end justify-between mb-12 gap-6">
+            <div>
+              <h2 className="text-3xl md:text-4xl font-bold mb-4">Featured Vehicles</h2>
+              <p className="text-text-secondary text-lg">
+                Explore our latest additions, fully inspected and ready to drive.
+              </p>
+            </div>
+            <Link href="/search">
+              <Button variant="outline" rightIcon={<ArrowRight className="w-4 h-4" />}>
+                View All Cars
+              </Button>
+            </Link>
+          </div>
+
+          {loading ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {[...Array(4)].map((_, i) => (
+                <div key={i} className="h-[400px] rounded-2xl bg-bg-secondary animate-pulse" />
+              ))}
+            </div>
+          ) : vehicles.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {vehicles.map((vehicle) => (
+                <VehicleCard
+                  key={vehicle.id}
+                  id={vehicle.id}
+                  make={vehicle.make}
+                  model={vehicle.model}
+                  year={vehicle.year}
+                  pricePerWeek={vehicle.weekly_payment || Math.round(vehicle.price / 52)}
+                  image={vehicle.images?.[0] || 'https://images.unsplash.com/photo-1619767886558-efdc259cde1a?q=80&w=1000&auto=format&fit=crop'}
+                  transmission={vehicle.transmission || 'Automatic'}
+                  fuelType={vehicle.fuel_type || 'Petrol'}
+                  mileage={vehicle.mileage || 0}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-12">
+              <p className="text-text-secondary">No vehicles available at the moment. Check back soon!</p>
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* Benefits Section */}
+      <section className="section-padding">
+        <div className="container mx-auto px-4 md:px-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+            <div className="relative">
+              {/* Placeholder for benefits image */}
+              <div className="aspect-[4/3] rounded-3xl bg-gradient-to-br from-bg-tertiary to-bg-secondary border border-border-secondary overflow-hidden relative">
+                <div className="absolute inset-0 bg-grid-white/[0.02]" />
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <ShieldCheck className="w-32 h-32 text-primary/20" />
+                </div>
+              </div>
+              {/* Floating Card */}
+              <div className="absolute -bottom-8 -right-8 bg-bg-secondary/90 backdrop-blur-xl p-6 rounded-2xl border border-border-glass shadow-xl max-w-xs animate-float">
+                <div className="flex items-center gap-4 mb-3">
+                  <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center">
+                    <CheckCircle2 className="w-6 h-6 text-green-500" />
+                  </div>
+                  <div>
+                    <p className="font-bold text-white">Approved!</p>
+                    <p className="text-xs text-text-muted">Just now</p>
+                  </div>
+                </div>
+                <p className="text-sm text-text-secondary">"AutoLadder helped me get a car when no one else would. Highly recommended!"</p>
+              </div>
+            </div>
+
+            <div className="space-y-8">
+              <h2 className="text-3xl md:text-4xl font-bold">
+                Why Choose <span className="text-primary">AutoLadder</span>?
+              </h2>
+              <p className="text-text-secondary text-lg leading-relaxed">
+                We believe everyone deserves a chance to own a reliable vehicle. Our technology-driven approach makes the process transparent, fair, and fast.
+              </p>
+
+              <div className="space-y-6">
+                {benefits.map((benefit, index) => (
+                  <div key={index} className="flex gap-4">
+                    <div className="w-12 h-12 rounded-xl bg-accent/10 flex items-center justify-center shrink-0">
+                      {benefit.icon}
+                    </div>
+                    <div>
+                      <h4 className="text-lg font-bold mb-1">{benefit.title}</h4>
+                      <p className="text-text-secondary">{benefit.description}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <Link href="/auth/login">
+                <Button size="lg" className="mt-4">
+                  Start Your Journey
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <Footer />
     </main>
-  )
+  );
 }

@@ -1,216 +1,60 @@
-'use client'
+import React from 'react';
+import Navigation from '@/components/Navigation';
+import { Footer } from '@/components/Footer';
+import { CarDetail } from '@/components/CarDetail';
 
-import { useEffect, useState } from 'react'
-import { useParams, useRouter } from 'next/navigation'
-import { motion } from 'framer-motion'
-import Navigation from '@/components/Navigation'
-import { useVehicleStore } from '@/store/vehicleStore'
-import CheckoutFlow from '@/components/CheckoutFlow'
-import { Breadcrumbs } from '@/components/ui'
+// Fetch vehicle data from API
+import { getDb } from '@/lib/db';
 
-export default function VehicleDetailPage() {
-  const params = useParams()
-  const router = useRouter()
-  const { getVehicle } = useVehicleStore()
-  const [vehicle, setVehicle] = useState<any>(null)
-  const [loading, setLoading] = useState(true)
+// Fetch vehicle data directly from DB
+async function getVehicle(id: string) {
+  try {
+    const db = getDb();
+    const result = await db.query(
+      `SELECT 
+        v.*, c.id as category_id, c.name as category_name, c.description as category_description
+       FROM vehicles v
+       LEFT JOIN vehicle_categories c ON v.category_id = c.id
+       WHERE v.id = $1`,
+      [id]
+    );
 
-  useEffect(() => {
-    const fetchVehicle = async () => {
-      if (params.id) {
-        const data = await getVehicle(params.id as string)
-        setVehicle(data)
-        setLoading(false)
-      }
+    if (result.rows.length === 0) {
+      return null;
     }
-    fetchVehicle()
-  }, [params.id, getVehicle])
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-carbon-400">Loading...</div>
-      </div>
-    )
+    return result.rows[0];
+  } catch (error) {
+    console.error('Error fetching vehicle:', error);
+    return null;
   }
+}
 
-  if (!vehicle) {
+export default async function VehiclePage({ params }: { params: { id: string } }) {
+  const vehicle = await getVehicle(params.id);
+
+  if (!vehicle || vehicle.error) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-carbon-400">Vehicle not found</div>
-      </div>
-    )
+      <main className="bg-bg-primary min-h-screen">
+        <Navigation />
+        <div className="container mx-auto px-4 py-24 text-center">
+          <h1 className="text-3xl font-bold mb-4">Vehicle Not Found</h1>
+          <p className="text-text-secondary mb-8">The vehicle you're looking for doesn't exist or has been removed.</p>
+          <p className="text-red-500 mb-4">Error: {vehicle?.error || 'Vehicle is null'}</p>
+          <a href="/search" className="text-primary hover:text-primary-light">
+            Browse all vehicles
+          </a>
+        </div>
+        <Footer />
+      </main>
+    );
   }
 
   return (
-    <main className="min-h-screen">
+    <main className="bg-bg-primary">
       <Navigation />
-      <div className="pt-24 pb-20">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          className="container"
-        >
-          <Breadcrumbs
-            items={[
-              { label: 'Home', href: '/' },
-              { label: 'Vehicles', href: '/vehicles' },
-              { label: `${vehicle.make} ${vehicle.model}`, href: undefined },
-            ]}
-            className="mb-8"
-          />
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-            {/* Image Gallery */}
-            <div>
-              <div className="relative h-[600px] bg-gradient-to-br from-carbon-800 to-carbon-900 rounded-lg overflow-hidden mb-4">
-                {vehicle.images && vehicle.images.length > 0 ? (
-                  <img
-                    src={vehicle.images[0]}
-                    alt={`${vehicle.make} ${vehicle.model}`}
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center">
-                    <div className="text-9xl text-carbon-700">🚗</div>
-                  </div>
-                )}
-              </div>
-              {vehicle.images && vehicle.images.length > 1 && (
-                <div className="grid grid-cols-4 gap-2">
-                  {vehicle.images.slice(1, 5).map((img: string, idx: number) => (
-                    <div key={idx} className="h-24 bg-carbon-800 rounded overflow-hidden">
-                      <img src={img} alt={`${vehicle.make} ${vehicle.model} ${idx + 2}`} className="w-full h-full object-cover" />
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Vehicle Details */}
-            <div>
-              <div className="mb-6">
-                <h1 className="text-display text-5xl font-bold text-carbon-50 mb-2">
-                  {vehicle.make} {vehicle.model}
-                </h1>
-                <p className="text-carbon-400 text-lg">
-                  {vehicle.year} • {vehicle.vehicle_type} • {vehicle.color || 'N/A'}
-                </p>
-              </div>
-
-              {vehicle.description && (
-                <div className="mb-8">
-                  <h2 className="text-display text-xl font-bold text-carbon-200 mb-3">DESCRIPTION</h2>
-                  <p className="text-carbon-300 leading-relaxed">{vehicle.description}</p>
-                </div>
-              )}
-
-              {/* Pricing Card */}
-              <div className="bg-carbon-900/50 backdrop-blur-sm border border-carbon-800 rounded-lg p-6 mb-8">
-                <h2 className="text-display text-xl font-bold text-volt-500 mb-6">PAYMENT PLAN</h2>
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between pb-4 border-b border-carbon-800">
-                    <span className="text-carbon-300">Total Price</span>
-                    <span className="text-display text-2xl font-bold text-carbon-50">
-                      {new Intl.NumberFormat('en-US', {
-                        style: 'currency',
-                        currency: 'UGX',
-                        minimumFractionDigits: 0,
-                      }).format(vehicle.price)}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-carbon-300">Deposit Required</span>
-                    <span className="text-display text-xl font-bold text-volt-500">
-                      {new Intl.NumberFormat('en-US', {
-                        style: 'currency',
-                        currency: 'UGX',
-                        minimumFractionDigits: 0,
-                      }).format(vehicle.deposit_amount)}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-carbon-300">
-                      {vehicle.payment_frequency === 'weekly' ? 'Weekly' : 'Monthly'} Payment
-                    </span>
-                    <span className="text-display text-xl font-bold text-carbon-50">
-                      {new Intl.NumberFormat('en-US', {
-                        style: 'currency',
-                        currency: 'UGX',
-                        minimumFractionDigits: 0,
-                      }).format(vehicle.payment_frequency === 'weekly' ? vehicle.weekly_payment || 0 : vehicle.monthly_payment || 0)}
-                    </span>
-                  </div>
-                  {vehicle.payment_term_months && (
-                    <div className="flex items-center justify-between">
-                      <span className="text-carbon-300">Payment Term</span>
-                      <span className="text-carbon-200 font-semibold">
-                        {vehicle.payment_term_months} months
-                      </span>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Specifications */}
-              <div className="mb-8">
-                <h2 className="text-display text-xl font-bold text-carbon-200 mb-4">SPECIFICATIONS</h2>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="bg-carbon-900/30 p-4 rounded border border-carbon-800">
-                    <div className="text-carbon-400 text-sm mb-1">Make</div>
-                    <div className="text-carbon-50 font-semibold">{vehicle.make}</div>
-                  </div>
-                  <div className="bg-carbon-900/30 p-4 rounded border border-carbon-800">
-                    <div className="text-carbon-400 text-sm mb-1">Model</div>
-                    <div className="text-carbon-50 font-semibold">{vehicle.model}</div>
-                  </div>
-                  <div className="bg-carbon-900/30 p-4 rounded border border-carbon-800">
-                    <div className="text-carbon-400 text-sm mb-1">Year</div>
-                    <div className="text-carbon-50 font-semibold">{vehicle.year}</div>
-                  </div>
-                  <div className="bg-carbon-900/30 p-4 rounded border border-carbon-800">
-                    <div className="text-carbon-400 text-sm mb-1">Type</div>
-                    <div className="text-carbon-50 font-semibold">{vehicle.vehicle_type}</div>
-                  </div>
-                  {vehicle.mileage && (
-                    <div className="bg-carbon-900/30 p-4 rounded border border-carbon-800">
-                      <div className="text-carbon-400 text-sm mb-1">Mileage</div>
-                      <div className="text-carbon-50 font-semibold">{vehicle.mileage.toLocaleString()} km</div>
-                    </div>
-                  )}
-                  {vehicle.vin && (
-                    <div className="bg-carbon-900/30 p-4 rounded border border-carbon-800">
-                      <div className="text-carbon-400 text-sm mb-1">VIN</div>
-                      <div className="text-carbon-50 font-semibold font-mono text-xs">{vehicle.vin}</div>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* CTA Buttons */}
-              <div className="flex flex-col sm:flex-row gap-4">
-                <button
-                  onClick={() => {
-                    const { initializeCheckout } = require('@/store/checkoutStore').useCheckoutStore.getState()
-                    initializeCheckout(vehicle.id)
-                  }}
-                  className="flex-1 px-8 py-4 bg-volt-500 text-carbon-950 font-bold text-lg hover:bg-volt-400 transition-all duration-300 rounded-sm shadow-lg hover:shadow-glow"
-                >
-                  RESERVE NOW
-                </button>
-                <button className="px-8 py-4 border-2 border-carbon-600 text-carbon-50 font-bold text-lg hover:border-volt-500 hover:text-volt-500 transition-all duration-300 rounded-sm">
-                  CHECK ELIGIBILITY
-                </button>
-              </div>
-            </div>
-          </div>
-        </motion.div>
-      </div>
-      
-      {/* Checkout Flow Modal */}
-      <CheckoutFlow />
+      <CarDetail vehicle={vehicle} />
+      <Footer />
     </main>
-  )
+  );
 }
-

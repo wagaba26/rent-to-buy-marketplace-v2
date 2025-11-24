@@ -1,56 +1,47 @@
-'use client'
-
-import { SelectHTMLAttributes, forwardRef } from 'react'
-import { motion } from 'framer-motion'
+import React, { SelectHTMLAttributes, forwardRef } from 'react';
+import { ChevronDown } from 'lucide-react';
 
 export interface SelectOption {
-  value: string | number
-  label: string
-  disabled?: boolean
+  value: string | number;
+  label: string;
 }
 
-export interface SelectProps extends Omit<SelectHTMLAttributes<HTMLSelectElement>, 'children'> {
-  label?: string
-  error?: string
-  helperText?: string
-  fullWidth?: boolean
-  options: SelectOption[]
-  placeholder?: string
+export interface SelectProps extends SelectHTMLAttributes<HTMLSelectElement> {
+  label?: string;
+  options: SelectOption[];
+  error?: string;
+  helperText?: string;
+  fullWidth?: boolean;
 }
 
-const Select = forwardRef<HTMLSelectElement, SelectProps>(
+export const Select = forwardRef<HTMLSelectElement, SelectProps>(
   (
     {
       label,
+      options,
       error,
       helperText,
       fullWidth = false,
-      options,
-      placeholder,
       className = '',
       id,
-      onAnimationStart,
-      onDrag,
-      onDragStart,
-      onDragEnd,
       ...props
     },
     ref
   ) => {
-    const selectId = id || `select-${Math.random().toString(36).substr(2, 9)}`
-    const widthClass = fullWidth ? 'w-full' : ''
+    const selectId = id || `select-${Math.random().toString(36).substr(2, 9)}`;
+    const widthClass = fullWidth ? 'w-full' : '';
 
-    const baseStyles = 'px-4 py-3 bg-carbon-950 border rounded-sm text-carbon-50 focus:outline-none focus:ring-2 focus:ring-volt-500 focus:border-volt-500 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed appearance-none cursor-pointer'
-    const errorStyles = error ? 'border-error focus:border-error focus:ring-error' : 'border-carbon-700'
+    const baseStyles = 'w-full appearance-none bg-bg-secondary border rounded-xl px-4 py-3 pr-10 text-text-primary focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed';
+    const errorStyles = error ? 'border-error focus:border-error focus:ring-error' : 'border-border-primary';
 
-    const combinedClassName = `${baseStyles} ${errorStyles} ${widthClass} ${className}`
+    const combinedClassName = `${baseStyles} ${errorStyles} ${className}`;
 
     return (
       <div className={`${widthClass}`}>
         {label && (
           <label
             htmlFor={selectId}
-            className="block text-sm font-medium text-carbon-300 mb-2"
+            className="block text-sm font-medium text-text-secondary mb-2"
           >
             {label}
             {props.required && <span className="text-error ml-1">*</span>}
@@ -58,58 +49,41 @@ const Select = forwardRef<HTMLSelectElement, SelectProps>(
         )}
 
         <div className="relative">
-          <motion.select
+          <select
             ref={ref}
             id={selectId}
             className={combinedClassName}
-            whileFocus={{ scale: 1.01 }}
             {...props}
           >
-            {placeholder && (
-              <option value="" disabled>
-                {placeholder}
-              </option>
-            )}
             {options.map((option) => (
-              <option
-                key={option.value}
-                value={option.value}
-                disabled={option.disabled}
-              >
+              <option key={option.value} value={option.value}>
                 {option.label}
               </option>
             ))}
-          </motion.select>
+          </select>
 
-          {/* Custom dropdown arrow */}
-          <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none text-carbon-400">
-            <svg className="icon icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-            </svg>
+          <div className="absolute right-4 top-1/2 transform -translate-y-1/2 pointer-events-none text-text-tertiary">
+            <ChevronDown className="w-4 h-4" />
           </div>
         </div>
 
         {error && (
-          <motion.p
-            initial={{ opacity: 0, y: -5 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mt-1 text-sm text-error"
-          >
+          <p className="mt-2 text-sm text-error flex items-center gap-1">
+            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+            </svg>
             {error}
-          </motion.p>
+          </p>
         )}
 
         {helperText && !error && (
-          <p className="mt-1 text-sm text-carbon-400">
+          <p className="mt-2 text-sm text-text-tertiary">
             {helperText}
           </p>
         )}
       </div>
-    )
+    );
   }
-)
+);
 
-Select.displayName = 'Select'
-
-export default Select
-
+Select.displayName = 'Select';

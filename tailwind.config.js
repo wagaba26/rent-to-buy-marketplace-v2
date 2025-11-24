@@ -9,19 +9,19 @@ module.exports = {
     extend: {
       fontFamily: {
         'primary': ['Inter', 'sans-serif'],
-        'heading': ['Poppins', 'sans-serif'],
+        'heading': ['SF Pro Display', 'Inter', 'sans-serif'],
       },
       colors: {
         primary: {
           DEFAULT: '#3b82f6', // Vibrant Electric Blue
           dark: '#2563eb',    // Deep Royal Blue
           light: '#60a5fa',   // Sky Blue
-          glow: 'rgba(59, 130, 246, 0.5)',
+          glow: 'rgba(59, 130, 246, 0.3)', // Toned down from 0.5
         },
         accent: {
-          DEFAULT: '#f59e0b', // Amber
-          light: '#fbbf24',
-          glow: 'rgba(245, 158, 11, 0.5)',
+          DEFAULT: '#06b6d4', // Cyan/Neon Blue
+          light: '#22d3ee',
+          glow: 'rgba(6, 182, 212, 0.3)', // Toned down
         },
         success: '#10b981',
         error: '#ef4444',
@@ -43,8 +43,8 @@ module.exports = {
           primary: '#020617',   // Deepest Navy/Black
           secondary: '#0f172a', // Dark Slate
           tertiary: '#1e293b',  // Lighter Slate
-          glass: 'rgba(15, 23, 42, 0.7)',
-          'glass-strong': 'rgba(2, 6, 23, 0.85)',
+          glass: 'rgba(15, 23, 42, 0.9)', // More solid glass
+          'glass-strong': 'rgba(2, 6, 23, 0.95)',
         },
         text: {
           primary: '#f8fafc',
@@ -55,8 +55,8 @@ module.exports = {
         border: {
           primary: 'rgba(148, 163, 184, 0.1)',
           secondary: 'rgba(148, 163, 184, 0.2)',
-          accent: 'rgba(59, 130, 246, 0.3)',
-          glass: 'rgba(255, 255, 255, 0.08)',
+          accent: 'rgba(59, 130, 246, 0.2)',
+          glass: 'rgba(255, 255, 255, 0.05)',
         },
       },
       spacing: {
@@ -73,11 +73,12 @@ module.exports = {
         '3xl': '2rem',
       },
       boxShadow: {
-        'glow': '0 0 20px rgba(59, 130, 246, 0.35)',
-        'glow-lg': '0 0 40px rgba(59, 130, 246, 0.25)',
-        'glow-accent': '0 0 20px rgba(245, 158, 11, 0.35)',
+        'glow': '0 0 15px rgba(59, 130, 246, 0.15)', // Toned down
+        'glow-lg': '0 0 30px rgba(59, 130, 246, 0.1)', // Toned down
+        'glow-accent': '0 0 15px rgba(6, 182, 212, 0.15)', // Toned down
         'glass': '0 8px 32px 0 rgba(0, 0, 0, 0.37)',
         'glass-inset': 'inset 0 0 0 1px rgba(255, 255, 255, 0.05)',
+        'elevation': '0 10px 30px -10px rgba(0, 0, 0, 0.5)',
       },
       animation: {
         'fade-in': 'fadeIn 0.6s ease-out forwards',
@@ -119,8 +120,8 @@ module.exports = {
           '50%': { transform: 'translateY(-10px)' },
         },
         pulseGlow: {
-          '0%, 100%': { opacity: '0.6', boxShadow: '0 0 20px rgba(59, 130, 246, 0.35)' },
-          '50%': { opacity: '1', boxShadow: '0 0 30px rgba(59, 130, 246, 0.5)' },
+          '0%, 100%': { opacity: '0.6', boxShadow: '0 0 15px rgba(59, 130, 246, 0.15)' },
+          '50%': { opacity: '1', boxShadow: '0 0 25px rgba(59, 130, 246, 0.25)' },
         },
       },
       backdropBlur: {
@@ -131,7 +132,7 @@ module.exports = {
       backgroundImage: {
         'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
         'gradient-conic': 'conic-gradient(from 180deg at 50% 50%, var(--tw-gradient-stops))',
-        'hero-glow': 'radial-gradient(circle at 50% 50%, rgba(59, 130, 246, 0.15) 0%, rgba(2, 6, 23, 0) 70%)',
+        'hero-glow': 'radial-gradient(circle at 50% 50%, rgba(59, 130, 246, 0.08) 0%, rgba(2, 6, 23, 0) 70%)',
       },
     },
   },

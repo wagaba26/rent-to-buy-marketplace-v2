@@ -1,10 +1,14 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { useAuth } from '@/components/AuthProvider';
+import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
+import { Car, Lock, Mail, AlertCircle } from 'lucide-react';
 
-export default function EnhancedLoginPage() {
-    const router = useRouter();
+export default function LoginPage() {
+    const { login } = useAuth();
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [showAccessCode, setShowAccessCode] = useState(false);
@@ -23,44 +27,22 @@ export default function EnhancedLoginPage() {
         setLoading(true);
 
         try {
-            const response = await fetch('/api/auth/login', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    email: formData.email,
-                    password: formData.password,
-                    accessCode: formData.accessCode || undefined,
-                    mfaToken: formData.mfaToken || undefined,
-                }),
-            });
+            const result = await login(
+                formData.email,
+                formData.password,
+                formData.accessCode || undefined,
+                formData.mfaToken || undefined
+            );
 
-            const data = await response.json();
-
-            if (data.success) {
-                // Store tokens
-                localStorage.setItem('accessToken', data.data.accessToken);
-                localStorage.setItem('refreshToken', data.data.refreshToken);
-                localStorage.setItem('user', JSON.stringify(data.data.user));
-
-                // Redirect based on role
-                const role = data.data.user.role;
-                if (role === 'admin') {
-                    router.push('/admin/dashboard');
-                } else if (role === 'retailer') {
-                    router.push('/retailer/dashboard');
-                } else {
-                    router.push('/dashboard');
-                }
-            } else {
-                // Check if MFA is required
-                if (data.error?.code === 'MFA_REQUIRED') {
+            if (!result.success) {
+                if (result.requiresMFA) {
                     setShowMFA(true);
                     setError('');
-                } else if (data.error?.code === 'ACCESS_CODE_REQUIRED') {
+                } else if (result.requiresAccessCode) {
                     setShowAccessCode(true);
                     setError('Access code is required for retailer login');
                 } else {
-                    setError(data.error?.message || 'Login failed');
+                    setError(result.error || 'Login failed');
                 }
             }
         } catch (err) {
@@ -71,156 +53,142 @@ export default function EnhancedLoginPage() {
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 p-4">
-            <div className="max-w-md w-full">
+        <div className="min-h-screen flex items-center justify-center bg-bg-primary relative overflow-hidden">
+            {/* Background Elements */}
+            <div className="absolute inset-0">
+                <div className="absolute top-0 right-0 w-1/2 h-1/2 bg-hero-glow opacity-40" />
+                <div className="absolute bottom-0 left-0 w-1/2 h-1/2 bg-gradient-radial from-accent/10 to-transparent opacity-30" />
+            </div>
+
+            <div className="max-w-md w-full relative z-10 px-4">
                 {/* Logo/Brand */}
-                <div className="text-center mb-8">
-                    <div className="inline-block p-3 bg-indigo-600 rounded-2xl mb-4">
-                        <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                        </svg>
-                    </div>
-                    <h1 className="text-3xl font-bold text-gray-900 mb-2">Welcome Back</h1>
-                    <p className="text-gray-600">Sign in to your account</p>
+                <div className="text-center mb-8 animate-fade-in">
+                    <Link href="/" className="inline-flex items-center gap-2 group mb-4">
+                        <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-primary to-primary-dark flex items-center justify-center shadow-lg shadow-primary/20 group-hover:shadow-primary/40 transition-all">
+                            <Car className="w-8 h-8 text-white" />
+                        </div>
+                        <span className="text-3xl font-bold font-heading text-white tracking-tight">
+                            Auto<span className="text-primary">Ladder</span>
+                        </span>
+                    </Link>
+                    <h1 className="text-3xl font-bold text-white mb-2">Welcome Back</h1>
+                    <p className="text-text-secondary">Sign in to your account</p>
                 </div>
 
                 {/* Login Card */}
-                <div className="bg-white rounded-2xl shadow-xl p-8">
+                <div className="bg-bg-secondary/80 backdrop-blur-xl border border-border-glass rounded-3xl shadow-glass p-8 animate-scale-in">
                     {error && (
-                        <div className="mb-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
-                            {error}
+                        <div className="mb-6 bg-error/10 border border-error/20 text-error px-4 py-3 rounded-xl text-sm flex items-center gap-2">
+                            <AlertCircle className="w-4 h-4 shrink-0" />
+                            <span>{error}</span>
                         </div>
                     )}
 
                     {showMFA && (
-                        <div className="mb-6 bg-blue-50 border border-blue-200 text-blue-700 px-4 py-3 rounded-lg text-sm">
+                        <div className="mb-6 bg-primary/10 border border-primary/20 text-primary px-4 py-3 rounded-xl text-sm">
                             Please enter your 6-digit MFA code from your authenticator app
                         </div>
                     )}
 
                     <form onSubmit={handleSubmit} className="space-y-5">
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Email Address</label>
-                            <input
-                                type="email"
-                                required
-                                value={formData.email}
-                                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
-                                placeholder="you@example.com"
-                            />
-                        </div>
+                        <Input
+                            label="Email Address"
+                            type="email"
+                            required
+                            value={formData.email}
+                            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                            placeholder="you@example.com"
+                            leftIcon={<Mail className="w-4 h-4" />}
+                            fullWidth
+                        />
 
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Password</label>
-                            <input
-                                type="password"
-                                required
-                                value={formData.password}
-                                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
-                                placeholder="••••••••"
-                            />
-                        </div>
+                        <Input
+                            label="Password"
+                            type="password"
+                            required
+                            value={formData.password}
+                            onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                            placeholder="••••••••"
+                            leftIcon={<Lock className="w-4 h-4" />}
+                            fullWidth
+                        />
 
                         {showAccessCode && (
-                            <div className="animate-fadeIn">
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Access Code
-                                    <span className="ml-2 text-xs text-gray-500">(Retailer Only)</span>
-                                </label>
-                                <input
+                            <div className="animate-fade-in-up">
+                                <Input
+                                    label="Access Code"
+                                    helperText="Enter the access code provided by admin"
                                     type="text"
                                     required={showAccessCode}
                                     value={formData.accessCode}
                                     onChange={(e) => setFormData({ ...formData, accessCode: e.target.value.toUpperCase() })}
-                                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition font-mono"
                                     placeholder="XXXX-XXXX-XXXX-XXXX"
-                                    maxLength={16}
+                                    className="font-mono"
+                                    fullWidth
                                 />
-                                <p className="mt-1 text-xs text-gray-500">Enter the access code provided by admin</p>
                             </div>
                         )}
 
                         {showMFA && (
-                            <div className="animate-fadeIn">
-                                <label className="block text-sm font-medium text-gray-700 mb-2">MFA Code</label>
-                                <input
+                            <div className="animate-fade-in-up">
+                                <Input
+                                    label="MFA Code"
                                     type="text"
                                     required={showMFA}
                                     value={formData.mfaToken}
                                     onChange={(e) => setFormData({ ...formData, mfaToken: e.target.value })}
-                                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition font-mono text-center text-2xl tracking-widest"
                                     placeholder="000000"
-                                    maxLength={6}
+                                    className="font-mono text-center text-2xl tracking-widest"
+                                    fullWidth
                                 />
                             </div>
                         )}
 
                         <div className="flex items-center justify-between text-sm">
-                            <label className="flex items-center">
-                                <input type="checkbox" className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
-                                <span className="ml-2 text-gray-600">Remember me</span>
+                            <label className="flex items-center cursor-pointer">
+                                <input type="checkbox" className="rounded border-border-secondary bg-bg-tertiary text-primary focus:ring-primary focus:ring-offset-0" />
+                                <span className="ml-2 text-text-secondary">Remember me</span>
                             </label>
-                            <a href="/forgot-password" className="text-indigo-600 hover:text-indigo-700 font-medium">
+                            <Link href="/forgot-password" className="text-primary hover:text-primary-light font-medium transition-colors">
                                 Forgot password?
-                            </a>
+                            </Link>
                         </div>
 
-                        <button
+                        <Button
                             type="submit"
-                            disabled={loading}
-                            className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-3 rounded-lg font-semibold hover:from-indigo-700 hover:to-purple-700 transition disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
+                            size="lg"
+                            className="w-full"
+                            isLoading={loading}
                         >
                             {loading ? 'Signing in...' : 'Sign In'}
-                        </button>
+                        </Button>
                     </form>
 
                     <div className="mt-6 text-center">
-                        <p className="text-sm text-gray-600">
+                        <p className="text-sm text-text-secondary">
                             Retailer?{' '}
-                            <a href="/retailers/register" className="text-indigo-600 hover:text-indigo-700 font-semibold">
+                            <Link href="/retailers/register" className="text-primary hover:text-primary-light font-semibold transition-colors">
                                 Register your business
-                            </a>
+                            </Link>
                         </p>
                     </div>
                 </div>
 
                 {/* Additional Info */}
-                <div className="mt-6 text-center text-sm text-gray-600">
-                    <p>Protected by enterprise-grade security</p>
-                    <div className="flex items-center justify-center gap-4 mt-2">
+                <div className="mt-6 text-center text-sm text-text-muted">
+                    <p className="mb-2">Protected by enterprise-grade security</p>
+                    <div className="flex items-center justify-center gap-4">
                         <span className="flex items-center gap-1">
-                            <svg className="w-4 h-4 text-green-600" fill="currentColor" viewBox="0 0 20 20">
-                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                            </svg>
+                            <div className="w-2 h-2 rounded-full bg-success" />
                             MFA Enabled
                         </span>
                         <span className="flex items-center gap-1">
-                            <svg className="w-4 h-4 text-green-600" fill="currentColor" viewBox="0 0 20 20">
-                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                            </svg>
+                            <div className="w-2 h-2 rounded-full bg-success" />
                             Encrypted
                         </span>
                     </div>
                 </div>
             </div>
-
-            <style jsx>{`
-        @keyframes fadeIn {
-          from {
-            opacity: 0;
-            transform: translateY(-10px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-        .animate-fadeIn {
-          animation: fadeIn 0.3s ease-out;
-        }
-      `}</style>
         </div>
     );
 }

@@ -1,52 +1,29 @@
-'use client'
+import React from 'react';
 
-import { HTMLAttributes, forwardRef } from 'react'
-import { motion, HTMLMotionProps } from 'framer-motion'
-
-export interface CardProps extends HTMLMotionProps<'div'> {
-  variant?: 'default' | 'outlined' | 'elevated' | 'glass'
-  hover?: boolean
+interface CardProps {
+  children: React.ReactNode;
+  className?: string;
+  hoverEffect?: boolean;
+  glass?: boolean;
 }
 
-const Card = forwardRef<HTMLDivElement, CardProps>(
-  (
-    {
-      children,
-      variant = 'default',
-      hover = false,
-      className = '',
-      ...props
-    },
-    ref
-  ) => {
-    const baseStyles = 'rounded-2xl transition-all duration-300'
-    
-    const variants = {
-      default: 'bg-bg-secondary border border-border-primary',
-      outlined: 'bg-transparent border-2 border-border-secondary',
-      elevated: 'bg-bg-secondary border border-border-primary shadow-xl',
-      glass: 'glass border border-border-primary',
-    }
-    
-    const hoverStyles = hover
-      ? 'hover:border-primary/50 hover:shadow-xl hover:-translate-y-1 cursor-pointer'
-      : ''
-    
-    const combinedClassName = `${baseStyles} ${variants[variant]} ${hoverStyles} ${className}`
-    
-    return (
-      <motion.div
-        ref={ref}
-        className={combinedClassName}
-        whileHover={hover ? { y: -4 } : {}}
-        {...props}
-      >
-        {children}
-      </motion.div>
-    )
-  }
-)
+export const Card: React.FC<CardProps> = ({
+  children,
+  className = '',
+  hoverEffect = false,
+  glass = false
+}) => {
+  const baseStyles = glass
+    ? 'glass-card'
+    : 'bg-bg-secondary border border-border-primary rounded-2xl shadow-lg';
 
-Card.displayName = 'Card'
+  const hoverStyles = hoverEffect && !glass
+    ? 'transition-all duration-300 hover:border-border-accent hover:shadow-glow hover:-translate-y-1'
+    : '';
 
-export default Card
+  return (
+    <div className={`${baseStyles} ${hoverStyles} ${className}`}>
+      {children}
+    </div>
+  );
+};
